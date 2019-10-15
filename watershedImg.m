@@ -23,6 +23,8 @@ clearvars; clc; close all;
 %Specify Parameters
 
 %Parameters for pre-processing and watershed.
+addpath('Autosegmentation/')
+
 frameFiles = dir('data\output\Position_*');
 mkdir(fullfile(frameFiles(1).folder, 'segmentedcells'));
 for timepoint= 1:length(frameFiles)
