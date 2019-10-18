@@ -21,7 +21,7 @@ for timepoint= 1:length(frameFiles)
     IB= imread(fullfile(frameFiles(timepoint).folder, frameFiles(timepoint).name));
     IB=double(IB)/65536;
     filledWell = imfill(imclose(imbinarize(IB, 'adaptive', 'ForegroundPolarity','dark'), strel('disk', 1)), 'holes');
-   
+    
     
     insideWell = bwmorph(filledWell, 'majority');
     %dilatedIB = imdilate (insideWell, strel ('disk',2));
@@ -34,17 +34,17 @@ for timepoint= 1:length(frameFiles)
     %Normalize 0-255
     %IB=((IB-min(IB(:)))./(max(IB(:))-min(IB(:)))).*255;
     %% Binarize
-       %level = graythresh(IB)
-       
+    %level = graythresh(IB)
+    
     binarizedImg = imbinarize(IB, 'adaptive', 'sensitivity', 0.7)==0; %0.7 good results
     baseFileName = sprintf('Image #%d.png', timepoint);
     fullFileName = fullfile('data\output\objectsToKeep', baseFileName);
     imwrite (binarizedImg, fullFileName)
-            
-%     binarizedImg = imbinarize(IB, 'adaptive', 'sensitivity', 0.67)==0;
-%     baseFileName = sprintf('Image #%d.png', timepoint);
-%     fullFileName = fullfile('data\output\test5', baseFileName);
-%     imwrite (binarizedImg, fullFileName)
+    
+    %     binarizedImg = imbinarize(IB, 'adaptive', 'sensitivity', 0.67)==0;
+    %     baseFileName = sprintf('Image #%d.png', timepoint);
+    %     fullFileName = fullfile('data\output\test5', baseFileName);
+    %     imwrite (binarizedImg, fullFileName)
     localThreshold = multithresh(IB);
     binarizedImg3 = imbinarize(IB, localThreshold * 1.02)==0;
     baseFileName3 = sprintf('Image #%d.png', timepoint);
@@ -69,21 +69,21 @@ for timepoint= 1:length(frameFiles)
     fullFileName = fullfile('data\output\segmentedcells', baseFileName);
     imwrite (closeimg, fullFileName)
     
-   %closeimg= imfill (closeimg, 'holes');
-%     suma= double(labelledImgOnlyCells) + double(fillimg);
+    %closeimg= imfill (closeimg, 'holes');
+    %     suma= double(labelledImgOnlyCells) + double(fillimg);
     %figure, imshow(suma+1, parula(3))
     %figure, imshow(suma == 1)
     
     %% Labelling cells and removing artifacts
-%     labelled= bwlabel (closeimg==1, 4);
-%     biggestObject = bwareafilt(closeimg>0, 1);
-%     closeimg(biggestObject) = 0;
+    %     labelled= bwlabel (closeimg==1, 4);
+    %     biggestObject = bwareafilt(closeimg>0, 1);
+    %     closeimg(biggestObject) = 0;
     %figure, imshow(biggestObject)
     %% Removing small objects
     %smallBW2= bwareafilt(suma == 1,[1 7], 4);
     %figure, imshow (smallBW2)
     %figure, imshow (labeledsuma+1, parula (20))
-%     sumafinal= suma>0;
+    %     sumafinal= suma>0;
     %figure, imshow (sumafinal)
     D = bwdist(~closeimg);
     %figure, imshow(D)
@@ -100,8 +100,8 @@ for timepoint= 1:length(frameFiles)
     fullFileName = fullfile('data\output\segmentedcells', baseFileName);
     imwrite (Iwatershed>0, fullFileName)
     fullFileName = fullfile('data\output\segmentedcells_coloured', baseFileName);
-    imwrite (rgb, fullFileName)    
-        
+    imwrite (rgb, fullFileName)
+    
     %% Postprocessing to fix incorrectly separated cells
     
 end
@@ -111,15 +111,16 @@ end
 %Search all the images at 'data/output/segmentedcells/Image*'
 watershededFiles = dir ('data/output/segmentedcells/Image #*');
 for timepoint= 1:length(watershededFiles)-1
-     actualTimePointImg = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
-     centroidInfo= regionprops (actualTimePointImg, 'centroid')
-     nextTimePointImg = imread (actualTimePointImg (watershededFiles(timepoint+1).folder, '/', watershededFiles(timepoint+1).name))
-     centroidIMG= cat (1, s.Centroid)
-     y = centroidIMG (:,2);
-     x = centroidIMG(:,1);
-     figure, imshow(actualTimePointImg)
-     hold on;
-     for numCell = timepoint 
-         plot(x(numCell), y(numCell), 'rx');
-     end
+    timepoint
+    actualTimePointImg = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
+    centroidInfo= regionprops (actualTimePointImg, 'centroid');
+    nextTimePointImg = imread (actualTimePointImg (watershededFiles(timepoint+1).folder, '/', watershededFiles(timepoint+1).name));
+    centroidIMG= cat (1, s.Centroid);
+    y = centroidIMG (:,2);
+    x = centroidIMG(:,1);
+    figure, imshow(nextTimePointImg)
+    hold on;
+    for numCell = timepoint
+        plot(x(numCell), y(numCell), 'rx');
+    end
 end
