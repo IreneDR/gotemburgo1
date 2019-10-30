@@ -6,14 +6,13 @@ frameFiles = dir('data\output\Position_*');
 % segmentation(frameFiles)
 
 %% Fixing segmentation errors
-% for numFrame = [44 68 70 89 107 110 138 139]
+% for numFrame = [87 142]
 %     baseFileName = sprintf('Image #%03d.png', numFrame);
 %     fullFileName = fullfile('data\output\segmentedcells', baseFileName);
 %     imgToFix = imread(fullFileName);
 %     figure, imshow(imgToFix)
-%
-%
-%
+% %     imgToFix(103, 94)
+% 
 %     imwrite(imgToFix, fullFileName);
 % end
 
@@ -35,12 +34,7 @@ for timepoint= 2:length(watershededFiles)-1
     labelledImg1 = resizedImg1;
     labelledImg2 = bwlabel(resizedImg2);
     OverlappingImg = bwlabel(OverlappingImg);
-    if max(OverlappingImg(:)) > max(labelledImg2(:))
-        disp('CARE: Possible overlapping issue!');
-        OverlappingImg_unrealCell = bwareafilt(OverlappingImg>0, max(OverlappingImg(:)) - max(labelledImg2(:)), 'smallest');
-        labelledImg2(OverlappingImg_unrealCell>0) = 0;
-        labelledImg1(OverlappingImg_unrealCell>0) = 0;
-    end
+
     
     %%
     mkdir(fullfile(frameFiles(1).folder, 'Tracking'));
@@ -72,16 +66,19 @@ for timepoint= 2:length(watershededFiles)-1
         end
     end
     
+    % If we have cells without a correspondance on the NewImg, we need to
+    % put a label on the NewImg, with the anew divided cells
     if length (unique(NewImg)) < length (unique(labelledImg2))
         newDividingCell = max (max (labelledImg2));
         labelledImg2(ismember(labelledImg2, foundCells)) = 0;
         uniqueLabels = unique(labelledImg2);
         uniqueLabels(uniqueLabels == 0) = [];
-        uniqueLabels
         if length(uniqueLabels)>1
-            disp('Error');
+            newlabels = (1: length(uniqueLabels)) + length(foundCells);
+            for numNewCell = 1:length(uniqueLabels)
+                NewImg(labelledImg2 == uniqueLabels(numNewCell)) = newlabels(numNewCell);
+            end
         end
-        NewImg(labelledImg2 == uniqueLabels) = newDividingCell;
     end
     
     previousNewImg = NewImg;
