@@ -26,64 +26,13 @@ I1 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(tim
 previousNewImg = bwlabel(I1);
 for timepoint= 2:length(watershededFiles)-1
     timepoint
-    %     actualTimePointImg = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
-    %     centroidInfo= regionprops (actualTimePointImg, 'centroid');
-    %     nextTimePointImg = imread (strcat(watershededFiles(timepoint+1).folder, '/', watershededFiles(timepoint+1).name));
-    %     nextTimePointImg_labelled = bwlabel(nextTimePointImg);
-    %     centroidIMG= cat (1, centroidInfo.Centroid);
-    %     y = centroidIMG (:,2);
-    %     x = centroidIMG(:,1);
-    %     %     imshow(nextTimePointImg)
-    %     %     hold on;
-    %     pixelvalue = [];
-    %      NewImg= zeros(size(nextTimePointImg_labelled),'like',nextTimePointImg_labelled);
-    %     for numCell = 1:length(centroidInfo)
-    %         %         plot(x(numCell), y(numCell), 'rx');
-    %         pixelvalue(numCell, 1) = numCell;
-    %         pixelvalue(numCell, 2) = nextTimePointImg_labelled(round(y(numCell)), round(x(numCell)));
-    %         if pixelvalue (numCell, 2) ~=0
-    %
-    %
-    %             NewImg(nextTimePointImg_labelled == pixelvalue(numCell, 1)) = pixelvalue(numCell, 2);
-    %
-    %         end
-    %
-    %     end
-    %     baseFileName = sprintf('Newimage #%03d.png', timepoint);
-    %             Sust_Files= fullfile('data\output\NewImages',baseFileName);
-    %             imwrite (NewImg, Sust_Files)
-    %             %find matches
-    
-    % matchedfeatures
-    %     frameFiles = dir('data\output\segmentedcells\Image #*');
-    I1 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
-    I2 = imread(strcat(watershededFiles(timepoint+1).folder, '/', watershededFiles(timepoint+1).name));
-    % Find the corners.
-    
-    % Extract features from the images:
-    % Possible methods:
-    %     detectBRISKFeatures
-    %     detectFASTFeatures
-    %     detectKAZEFeatures
-    %     detectHARRISFeatures
-    %     detectMinEigenFeatures
-    %     detectMSERFeatures
-    %     detectSURFFeatures
-    
-    % This may be replaced by centroid function
-    points1 = detectKAZEFeatures(I1);
-    points2 = detectKAZEFeatures(I2);
-    % Extract the neighborhood features.
-    
-    [features1,valid_points1] = extractFeatures(I1,points1, 'blocksize', 11);
-    [features2,valid_points2] = extractFeatures(I2,points2, 'blocksize', 11);
-    % Match the features.
-    resizedImg1 = imresize(I1, max(size(I1), size(I2)))>0;
-    resizedImg2 = imresize(I2, max(size(I1), size(I2)))>0;
-    combinedImg = imfuse(resizedImg1, resizedImg2,'blend','Scaling','joint')>0;%common and differences in diff colours
-    combinedImg2 = imfuse(resizedImg1, resizedImg2,'diff','Scaling','joint')>0;%just differences
-    OverlappingImg= combinedImg - combinedImg2;
-    labelledImg1 = bwlabel(resizedImg1);
+    I2 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
+    resizedImg1 = imresize(previousNewImg, max(size(previousNewImg), size(I2)), 'nearest');
+    resizedImg2 = imresize(I2, max(size(previousNewImg), size(I2)))>0;
+    combinedImg = imfuse(resizedImg1>0, resizedImg2,'blend','Scaling','joint')>0;%common and differences in diff colours
+    combinedImg2 = imfuse(resizedImg1>0, resizedImg2,'diff','Scaling','joint')>0;%just differences
+    OverlappingImg = combinedImg - combinedImg2;
+    labelledImg1 = resizedImg1;
     labelledImg2 = bwlabel(resizedImg2);
     OverlappingImg = bwlabel(OverlappingImg);
     if max(OverlappingImg(:)) > max(labelledImg2(:))
@@ -96,36 +45,45 @@ for timepoint= 2:length(watershededFiles)-1
     %%
     mkdir(fullfile(frameFiles(1).folder, 'Tracking'));
     NewImg= zeros(size(labelledImg2),'like',labelledImg2);
-    trackingCells = {};
+    foundCells = [];
     for numCell= 1:max (max (labelledImg1))
         numCell;
         
-        trackingCells(numCell, 1) = {numCell};
         uniqueLabels = unique(labelledImg2(labelledImg1 == numCell));
         uniqueLabels(uniqueLabels == 0) = [];
-        trackingCells(numCell, 2) = {uniqueLabels};
         
-        if length(trackingCells{numCell, 2}) == 1
-            if isempty(previousNewImg) == 0 && size(previousNewImg, 1) >= size(trackingCells, 1)
-                NewImg(labelledImg2 == trackingCells{numCell, 2}) = trackingCells{numCell, 1}; 
-            end
-        else
-            timepoint
-            numCell
-            length(trackingCells{numCell, 2})
-            dividingCells = trackingCells{numCell, 2};
+        foundCells = unique(vertcat(uniqueLabels, foundCells));
+        
+        if length(uniqueLabels) == 1
+             NewImg(labelledImg2 == uniqueLabels) = numCell;
+        elseif length(uniqueLabels) > 1
+            dividingCells = uniqueLabels;
             areas = regionprops(labelledImg2,'Area');
-            [~, indexMother] = max([areas(trackingCells{numCell, 2}).Area]);
-            [~, indexDaughter] = min([areas(trackingCells{numCell, 2}).Area]);
-            trackingCells(numCell, 2) = {dividingCells(indexMother)};
+            [~, indexMother] = max([areas(dividingCells).Area]);
+            [~, indexDaughter] = min([areas(dividingCells).Area]);
+            %% The mother cell get its real ID
+            NewImg(labelledImg2 == dividingCells(indexMother)) = numCell;
+            %% We create a new ID for the daughter cell
             newDividingCell = max (max (labelledImg2));
-            trackingCells(newDividingCell, 2) = {dividingCells(indexDaughter)};
-            trackingCells(newDividingCell, 1) = {newDividingCell};
+            %% Assign the new dividing cell to its new ID
             NewImg(labelledImg2 == dividingCells(indexDaughter)) = newDividingCell;
-            NewImg(labelledImg2 == trackingCells{numCell, 2}) = trackingCells{numCell, 1}; 
+        else
+            disp('ERRRRRRROR!');
         end
-        %% We paint the 'father' cell
     end
+    
+    if length (unique(NewImg)) < length (unique(labelledImg2))
+        newDividingCell = max (max (labelledImg2));
+        labelledImg2(ismember(labelledImg2, foundCells)) = 0;
+        uniqueLabels = unique(labelledImg2);
+        uniqueLabels(uniqueLabels == 0) = [];
+        uniqueLabels
+        if length(uniqueLabels)>1
+            disp('Error');
+        end
+        NewImg(labelledImg2 == uniqueLabels) = newDividingCell;
+    end
+    
     previousNewImg = NewImg;
     
     baseFileName = sprintf('trackedimg #%03d.png', timepoint);
