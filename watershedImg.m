@@ -21,8 +21,10 @@ frameFiles = dir('data\output\Position_*');
 
 %Search all the images at 'data/output/segmentedcells/Image*'
 watershededFiles = dir ('data/output/segmentedcells/Image #*');
-previousTrackingCells = [];
-for timepoint= 1:length(watershededFiles)-1
+timepoint = 1;
+I1 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
+previousNewImg = bwlabel(I1);
+for timepoint= 2:length(watershededFiles)-1
     timepoint
     %     actualTimePointImg = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
     %     centroidInfo= regionprops (actualTimePointImg, 'centroid');
@@ -104,10 +106,8 @@ for timepoint= 1:length(watershededFiles)-1
         trackingCells(numCell, 2) = {uniqueLabels};
         
         if length(trackingCells{numCell, 2}) == 1
-            if isempty(previousTrackingCells) == 0 && size(previousTrackingCells, 1) >= size(trackingCells, 1)
-
+            if isempty(previousNewImg) == 0 && size(previousNewImg, 1) >= size(trackingCells, 1)
                 NewImg(labelledImg2 == trackingCells{numCell, 2}) = trackingCells{numCell, 1}; 
-                trackingCells(numCell, 2) = {previousTrackingCells{trackingCells{numCell, 1}, 2}};
             end
         else
             timepoint
@@ -126,7 +126,7 @@ for timepoint= 1:length(watershededFiles)-1
         end
         %% We paint the 'father' cell
     end
-    previousTrackingCells = trackingCells;
+    previousNewImg = NewImg;
     
     baseFileName = sprintf('trackedimg #%03d.png', timepoint);
     Sust_Files= fullfile('data\output\Tracking',baseFileName);
