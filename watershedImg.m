@@ -83,6 +83,13 @@ for timepoint= 1:length(watershededFiles)-1
     OverlappingImg= combinedImg - combinedImg2;
     labelledImg1 = bwlabel(resizedImg1);
     labelledImg2 = bwlabel(resizedImg2);
+    OverlappingImg = bwlabel(OverlappingImg);
+    if max(OverlappingImg(:)) > max(labelledImg2(:))
+        disp('CARE: Possible overlapping issue!');
+        OverlappingImg_unrealCell = bwareafilt(OverlappingImg>0, max(OverlappingImg(:)) - max(labelledImg2(:)), 'smallest');
+        labelledImg2(OverlappingImg_unrealCell>0) = 0;
+        labelledImg1(OverlappingImg_unrealCell>0) = 0;
+    end
     
     %%
     mkdir(fullfile(frameFiles(1).folder, 'Tracking'));
@@ -98,7 +105,8 @@ for timepoint= 1:length(watershededFiles)-1
         
         if length(trackingCells{numCell, 2}) == 1
             if isempty(previousTrackingCells) == 0 && size(previousTrackingCells, 1) >= size(trackingCells, 1)
-                %% CARE 
+
+                NewImg(labelledImg2 == trackingCells{numCell, 2}) = trackingCells{numCell, 1}; 
                 trackingCells(numCell, 2) = {previousTrackingCells{trackingCells{numCell, 1}, 2}};
             end
         else
@@ -110,10 +118,13 @@ for timepoint= 1:length(watershededFiles)-1
             [~, indexMother] = max([areas(trackingCells{numCell, 2}).Area]);
             [~, indexDaughter] = min([areas(trackingCells{numCell, 2}).Area]);
             trackingCells(numCell, 2) = {dividingCells(indexMother)};
-            trackingCells(max (max (labelledImg1))+1, 2) = {dividingCells(indexDaughter)};
-            trackingCells(max (max (labelledImg1))+1, 1) = {max(max(labelledImg1))+1};
+            newDividingCell = max (max (labelledImg2));
+            trackingCells(newDividingCell, 2) = {dividingCells(indexDaughter)};
+            trackingCells(newDividingCell, 1) = {newDividingCell};
+            NewImg(labelledImg2 == dividingCells(indexDaughter)) = newDividingCell;
+            NewImg(labelledImg2 == trackingCells{numCell, 2}) = trackingCells{numCell, 1}; 
         end
-        NewImg(labelledImg2 == trackingCells{numCell, 1}) = trackingCells{numCell, 2}; 
+        %% We paint the 'father' cell
     end
     previousTrackingCells = trackingCells;
     
