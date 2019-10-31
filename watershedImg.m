@@ -23,6 +23,13 @@ watershededFiles = dir ('data/output/segmentedcells/Image #*');
 timepoint = 1;
 I1 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
 previousNewImg = bwlabel(I1);
+
+%% INIT HeritageTable 
+HeritageInfo = {};
+for ID_Cell= 1:max (max (previousNewImg))
+    HeritageInfo = vertcat(HeritageInfo, {ID_Cell, [], []});
+end
+
 for timepoint= 2:length(watershededFiles)-1
     timepoint
     I2 = imread(strcat(watershededFiles(timepoint).folder, '/', watershededFiles(timepoint).name));
@@ -61,6 +68,10 @@ for timepoint= 2:length(watershededFiles)-1
             newDividingCell = max (max (labelledImg2));
             %% Assign the new dividing cell to its new ID
             NewImg(labelledImg2 == dividingCells(indexDaughter)) = newDividingCell;
+            
+            %% Assign daughter to mother
+            HeritageInfo(numCell, 2) = {vertcat(HeritageInfo{numCell, 2}, newDividingCell)};
+            HeritageInfo(numCell, 3)= {vertcat(HeritageInfo{numCell, 3}, timepoint)};
         else
             disp('ERRRRRRROR!');
         end
@@ -73,12 +84,23 @@ for timepoint= 2:length(watershededFiles)-1
         labelledImg2(ismember(labelledImg2, foundCells)) = 0;
         uniqueLabels = unique(labelledImg2);
         uniqueLabels(uniqueLabels == 0) = [];
-        if length(uniqueLabels)>1
-            newlabels = (1: length(uniqueLabels)) + length(foundCells);
-            for numNewCell = 1:length(uniqueLabels)
-                NewImg(labelledImg2 == uniqueLabels(numNewCell)) = newlabels(numNewCell);
-            end
+        centroidInfoOfMothers = regionprops (NewImg, 'centroid');
+        newlabels = (1: length(uniqueLabels)) + length(foundCells);
+        for numNewCell = 1:length(uniqueLabels)
+            NewImg(labelledImg2 == uniqueLabels(numNewCell)) = newlabels(numNewCell);
+            
+            %% Centroid region of daughter
+            imageWithOnlyDaughter = labelledImg2 == uniqueLabels(numNewCell);
+            DaughterCentroid= regionprops (imageWithOnlyDaughter, 'centroid');
+            [ClosestToNewCell, closestCellIndex]= pdist2(vertcat(centroidInfoOfMothers.Centroid), vertcat(DaughterCentroid.Centroid),'euclidean', 'smallest', 1)
+            %% Do more stuff about daughter/mother related to centroid or closeness
+            
+            numCell= [closestCellIndex]
+            HeritageInfo(numCell, 2) = {vertcat(HeritageInfo{numCell, 2}, newDividingCell)};
+            HeritageInfo(numCell, 3)= {vertcat(HeritageInfo{numCell, 3}, timepoint)};
         end
+        
+
     end
     
     previousNewImg = NewImg;
