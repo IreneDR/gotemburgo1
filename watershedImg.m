@@ -110,14 +110,19 @@ for timepoint= 2:length(watershededFiles)-1
     baseFileName = sprintf('trackedimg #%03d.png', timepoint);
     Sust_Files= fullfile('data\output\Tracking',baseFileName);
     
-    figure('units','normalized','outerposition',[0 0 1 1], 'visible', 'off'), imshow(NewImg+1,  colorcube(20))
+    h = figure('visible', 'off');
+    imshow(NewImg+1,  colorcube(20))
     hold on;
+    set(h, 'units','normalized','outerposition',[0 0 1 1]);
+    ax = get(h, 'Children');
+    set(ax,'Units','normalized')
+    set(ax,'Position',[0 0 1 1])
     centroid = regionprops(NewImg, 'Centroid');
     centroids =round(vertcat(centroid.Centroid));
     for cellid= 1:size(centroids, 1)
-        text(centroids(cellid,1), centroids(cellid,2), {cellid},'color', 'white' )
+        text(centroids(cellid,1), centroids(cellid,2), {cellid},'color', 'white', 'HorizontalAlignment', 'center')
     end
-    print (Sust_Files,'-dpng', '-r300')
-    
+    h.InvertHardcopy = 'off';
+    saveas(h, Sust_Files)
     close all
 end
