@@ -72,6 +72,8 @@ for timepoint= 2:length(watershededFiles)-1
             %% Assign daughter to mother
             HeritageInfo(numCell, 2) = {vertcat(HeritageInfo{numCell, 2}, newDividingCell)};
             HeritageInfo(numCell, 3)= {vertcat(HeritageInfo{numCell, 3}, timepoint)};
+            
+            HeritageInfo = vertcat(HeritageInfo, {newDividingCell, [], []});
         else
             disp('ERRRRRRROR!');
         end
@@ -95,64 +97,27 @@ for timepoint= 2:length(watershededFiles)-1
             [ClosestToNewCell, closestCellIndex]= pdist2(vertcat(centroidInfoOfMothers.Centroid), vertcat(DaughterCentroid.Centroid),'euclidean', 'smallest', 1)
             %% Do more stuff about daughter/mother related to centroid or closeness
             
-            numCell= [closestCellIndex]
+            numCell = closestCellIndex;
             HeritageInfo(numCell, 2) = {vertcat(HeritageInfo{numCell, 2}, newDividingCell)};
             HeritageInfo(numCell, 3)= {vertcat(HeritageInfo{numCell, 3}, timepoint)};
+            
+            HeritageInfo = vertcat(HeritageInfo, {newDividingCell, [], []});
         end
-        
-
     end
     
     previousNewImg = NewImg;
     
     baseFileName = sprintf('trackedimg #%03d.png', timepoint);
     Sust_Files= fullfile('data\output\Tracking',baseFileName);
-    imwrite (NewImg+1,  colorcube(20), Sust_Files)
     
-    %     figure, imshow(I1)
-    %     hold on;
-    %     validsfeatures1= [];
-    %     validPointsInsideCells1= [];
-    %     for numPoint = 1:length(valid_points1)
-    %         isInsideCell = I1 (round (valid_points1.Location(numPoint, 2)), round( valid_points1.Location(numPoint, 1)));
-    %
-    %         if isInsideCell==1
-    %             validsfeatures1 = vertcat(validsfeatures1 ,features1(numPoint, :));
-    %             validPointsInsideCells1 = vertcat(validPointsInsideCells1, numPoint);
-    %             plot(valid_points1.Location(numPoint, 1), valid_points1.Location(numPoint, 2), 'rx')
-    %         end
-    %
-    %     end
-    %
-    %     figure, imshow(I2)
-    %     hold on;
-    %     validsfeatures2= [];
-    %     validPointsInsideCells2 = [];
-    %     for numPoint = 1:length(valid_points2)
-    %         isInsideCell = I2 (round (valid_points2.Location(numPoint, 2)), round( valid_points2.Location(numPoint, 1)));
-    %
-    %         if isInsideCell==1
-    %             validsfeatures2 = vertcat(validsfeatures2 ,features2(numPoint, :));
-    %             validPointsInsideCells2 = vertcat(validPointsInsideCells2, numPoint);
-    % %             plot(valid_points2.Location(numPoint, 1), valid_points2.Location(numPoint, 2), 'rx')
-    %         end
-    %     end
-    
-    % MatchThreshold: useless
-    % MaxRatio: increase value return more matches. To delete the furthest
-    % matches, decrease the value.
-    %     indexPairs = matchFeatures(validsfeatures1,validsfeatures2, 'matchThreshold', 100, 'MaxRatio',0.1, 'unique', true);
-    
-    % Retrieve the locations of the corresponding points for each image.
-    
-    %     matchedPoints1 = valid_points1(validPointsInsideCells1(indexPairs(:,1)),:);
-    %     matchedPoints2 = valid_points2(validPointsInsideCells2(indexPairs(:,2)),:);
-    %     % Visualize the corresponding points. You can see the effect of translation between the two images despite several erroneous matches.
-    
-    figure('units','normalized','outerposition',[0 0 1 1], 'visible', 'off' ); showMatchedFeatures(I1,I2,matchedPoints1,matchedPoints2);
-    mkdir('data\output\features');
-    baseFileName = sprintf('Newimage #%03d.png', timepoint);
-    Sust_Files= fullfile('data\output\features',baseFileName);
+    figure('units','normalized','outerposition',[0 0 1 1], 'visible', 'off'), imshow(NewImg+1,  colorcube(20))
+    hold on;
+    centroid = regionprops(NewImg, 'Centroid');
+    centroids =round(vertcat(centroid.Centroid));
+    for cellid= 1:size(centroids, 1)
+        text(centroids(cellid,1), centroids(cellid,2), {cellid},'color', 'white' )
+    end
     print (Sust_Files,'-dpng', '-r300')
+    
     close all
 end
