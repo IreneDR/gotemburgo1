@@ -1,3 +1,6 @@
+function [] = crop_Well()
+%CROP_WELL Summary of this function goes here
+%   Detailed explanation goes here
 %% Process images to get only the well and crop it from all the images
 
 frameFiles = dir('data\input\Position_*');
@@ -29,5 +32,8 @@ for timePoint = 1:length(frameFiles)
      croppedgfp= imcrop(img_gfp, bbox.BoundingBox);
      imwrite(croppedImage, fullfile(frameFiles(timePoint).folder, 'output', frameFiles(timePoint).name));
        imwrite(croppedgfp, fullfile(gfpFiles(timePoint).folder, 'output', gfpFiles(timePoint).name));
+end
+
+
 end
 
