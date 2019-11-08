@@ -82,28 +82,43 @@ for timepoint= 1: length(labelledFiles)
     %figure, imshow(GFPimg_resized)
     GFPimg_resized(NewImg==0) = 0;
     peaks= GFPimg_resized > threshold;
-    h= figure ('visible', 'off');
-    imshow(GFPimg_resized);
-    hold on
-     set(h, 'units','normalized','outerposition',[0 0 1 1]);
-    ax = get(h, 'Children');
-    set(ax,'Units','normalized')
-    set(ax,'Position',[0 0 1 1])
-    %Look for the peaks
     peaks_nosmallareas = bwareaopen(peaks, 1);
-    centroids = regionprops(peaks_nosmallareas, 'Centroid');
-    centroids = vertcat(centroids.Centroid);
-    %[xs, ys] = find(peaks_nosmallareas);
-    if size(centroids, 1)>0
-        [ys] = centroids(:, 1);
-        [xs] = centroids(:, 2);
-        for numX = 1:length(xs)  
-            % Go through all the xs and ys
-            plot(ys(numX),  xs(numX), 'rx')
+    answer = '';
+    while isequal(answer, 'No') == 0
+        h= figure ('visible', 'on');
+        imshow(GFPimg_resized);
+        hold on
+         set(h, 'units','normalized','outerposition',[0 0 1 1]);
+        ax = get(h, 'Children');
+        set(ax,'Units','normalized')
+        set(ax,'Position',[0 0 1 1])
+        %Look for the peaks
+        centroids = regionprops(peaks_nosmallareas, 'Centroid');
+        centroids = vertcat(centroids.Centroid);
+        %[xs, ys] = find(peaks_nosmallareas);
+        if size(centroids, 1)>0
+            [ys] = centroids(:, 1);
+            [xs] = centroids(:, 2);
+            for numX = 1:length(xs)  
+                % Go through all the xs and ys
+                plot(ys(numX),  xs(numX), 'rx')
+            end
+        end
+    
+        peaks_labelled = bwlabel(peaks_nosmallareas);
+        answer = questdlg('Do you want to add or remove any GFP point?', 'GFP', 'Add', 'Remove', 'No', 'No');
+    
+        if isequal(answer, 'No') == 0
+            points = impoint(ax);
+            newPoint = round(getPosition(points));
+            if isequal(answer, 'Add')
+                peaks_nosmallareas(newPoint(2), newPoint(1)) = 1;
+            elseif isequal(answer, 'Remove')
+                %% Remove all the peaks of the selected cell
+                peaks_nosmallareas(peaks_labelled(newPoint(2), newPoint(1)) == peaks_labelled) = 0;
+            end
         end
     end
-    
-    points = impoint(h);
     
      baseFileName = sprintf('Position_%03d.png', timepoint);
     peakFile= fullfile(outputDirGFP, baseFileName);
