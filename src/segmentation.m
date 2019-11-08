@@ -49,7 +49,7 @@ function [] = segmentation(experimentDir, sensitivity, additionalBinarizedValue,
         D(closeimg==0) = Inf;
         Iwatershed = watershed(D);
         Iwatershed(~closeimg) = 0;
-        rgb = label2rgb(Iwatershed,'jet',[.5 .5 .5]);
+    
         fullFileName = fullfile(outputDir, frameFiles(timepoint).name);
         imwrite (Iwatershed>0, fullFileName)
     

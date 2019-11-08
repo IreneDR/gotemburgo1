@@ -94,7 +94,7 @@ for timepoint= 2:length(watershededFiles)-1
     
     previousNewImg = NewImg;
     
-    baseFileName = sprintf('Position_#%03d.png', timepoint);
+    baseFileName = sprintf('Position_%03d.png', timepoint);
     Sust_Files= fullfile(outputDir,baseFileName);
     
     h = figure('visible', 'off');
@@ -112,6 +112,10 @@ for timepoint= 2:length(watershededFiles)-1
     h.InvertHardcopy = 'off';
     saveas(h, Sust_Files)
     close all
+    
+    baseFileName = sprintf('Position_%03d.mat', timepoint);
+    matFile= fullfile(outputDir, baseFileName);
+    save(matFile, 'NewImg');
 end
 % Save HeritageInfo as excel.
 

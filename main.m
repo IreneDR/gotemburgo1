@@ -1,23 +1,32 @@
 
 experimentDir = 'D:\Irene\gotemburgo1\data\RawData\050619\serie1\';
-
+gfpDir= 'D:\Irene\gotemburgo1\data\RawData\050619\serie1\gfp\';
 % %% Cropwell
-%cropWell(experimentDir)
+% cropWell(experimentDir, fullfile(experimentDir, 'gfp'));
+% close all
 % % Fix Crop manually
 % frameFiles=  dir(fullfile(experimentDir, 'Position_*'));
-%   for timePoint = [152]
+% gfpFiles= dir(fullfile(gfpDir, 'Position_*'));
+
+%   for timePoint = [20]
 %       
-%          img_original = imread(fullfile(frameFiles(timePoint).folder, frameFiles(timePoint).name));
-%         [~, bbox.BoundingBox] = imcrop(img_original);
-%          croppedImage = imcrop(img_original, bbox.BoundingBox);
+%       img_original = imread(fullfile(frameFiles(timePoint).folder, frameFiles(timePoint).name));
+%       img_gfp= imread(fullfile(gfpFiles(timePoint).folder, gfpFiles(timePoint).name));
+%       [~, bbox.BoundingBox] = imcrop(img_original);
+%    
+%       croppedImage = imcrop(img_original, bbox.BoundingBox);
+%       croppedgfp= imcrop(img_gfp, bbox.BoundingBox);
+%                   
 %          outputDir= strrep(experimentDir, 'RawData', 'Output/Cropwell');
+%          outputDirGFP = strrep(gfpDir, 'RawData', 'Output/Cropwell');
 %          imwrite(croppedImage, fullfile(outputDir, frameFiles(timePoint).name));
+%          imwrite(croppedgfp, fullfile(outputDirGFP, gfpFiles(timePoint).name));
 %   end
 %% Segmentation
-disp('------------------------ Segmentation ------------------------')
+% disp('------------------------ Segmentation ------------------------')
 % sensitivity:
 % 
-%segmentation(experimentDir, 0.71, 1.02, 5);
+% segmentation(experimentDir, 0.71, 1.02, 5);
 
 % Fixing segmentation errors
 % for numFrame = 147 %[87 142]
@@ -44,8 +53,63 @@ disp('------------------------ Segmentation ------------------------')
 %     imwrite(imgToFix, fullFileName);
 %     close all
 % end
+
+
 %% Tracking
-disp('------------------------ Tracking ------------------------')
-Tracking(experimentDir)
+% disp('------------------------ Tracking ------------------------')
+% Tracking(experimentDir)
+%% GFP over BF
+%Search all the images at 'experimentDir*'
+
+% THRESHOLD = 30000;
+
+inputDir= strrep(experimentDir, 'RawData', 'Output/Tracking')
+labelledFiles = dir(fullfile(inputDir, 'Position_*.mat'));
+outputDir= strrep(experimentDir, 'RawData', 'Output/GenerationTime')
+mkdir (outputDir)
+inputDirGFP = strrep(gfpDir, 'RawData', 'Output/Cropwell');
+outputDirGFP = strrep(gfpDir, 'RawData', 'Output/Peaks');
+mkdir (outputDirGFP)
+gfpFiles= dir(fullfile(inputDirGFP, 'Position_*'));
+for timepoint= 1: length(labelledFiles)
+    timepoint
+    load(strcat(labelledFiles(timepoint).folder, '/', labelledFiles(timepoint).name));
+    GFPimg= imread(strcat(gfpFiles(timepoint).folder, '/', gfpFiles(timepoint).name));
+    GFPimg_resized= imresize(GFPimg, size(NewImg), 'nearest');
+    GFPimg_resized(imerode(NewImg==0, strel('disk', 10)))=0;
+    meanPixelValue= mean(GFPimg_resized(GFPimg_resized>0));
+    threshold = meanPixelValue*4;
+    %figure, imshow(GFPimg_resized)
+    GFPimg_resized(NewImg==0) = 0;
+    peaks= GFPimg_resized > threshold;
+    h= figure ('visible', 'off');
+    imshow(GFPimg_resized);
+    hold on
+     set(h, 'units','normalized','outerposition',[0 0 1 1]);
+    ax = get(h, 'Children');
+    set(ax,'Units','normalized')
+    set(ax,'Position',[0 0 1 1])
+    %Look for the peaks
+    peaks_nosmallareas = bwareaopen(peaks, 1);
+    centroids = regionprops(peaks_nosmallareas, 'Centroid');
+    centroids = vertcat(centroids.Centroid);
+    %[xs, ys] = find(peaks_nosmallareas);
+    if size(centroids, 1)>0
+        [ys] = centroids(:, 1);
+        [xs] = centroids(:, 2);
+        for numX = 1:length(xs)  
+            % Go through all the xs and ys
+            plot(ys(numX),  xs(numX), 'rx')
+        end
+    end
+    
+    points = impoint(h);
+    
+     baseFileName = sprintf('Position_%03d.png', timepoint);
+    peakFile= fullfile(outputDirGFP, baseFileName);
+        saveas (h, peakFile)
+    close all
+    
+end
 
 
